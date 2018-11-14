@@ -1,0 +1,90 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+ name: '{SITENAME}-{BRANCH}-{ENVIRONMENT}'
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  minReadySeconds: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: '{SITENAME}-{BRANCH}-{ENVIRONMENT}'
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - '{SITENAME}-{BRANCH}-{ENVIRONMENT}'
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: nginx-php
+          image: 
+          ports:
+            - name: nginx
+              containerPort: 80
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 5m
+            limits:
+              memory: 1100Mi
+              cpu: 1000m
+          volumeMounts:
+          - mountPath: /var/nginx-uploads
+            name: uploads
+          livenessProbe:
+            httpGet:
+              path: /
+              port: nginx
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: nginx
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 2
+          env:
+            - name: ENVIRONMENT
+              value: "{ENVIRONMENT}"
+            - name: AWS_HOST_ENVIRONMENT
+              value: "{ENVIRONMENT}"
+            - name: SITE_NAME
+              value: "{SITENAME}"
+            - name: SITE_BRANCH
+              value: "{BRANCH}"
+            - name: EXPOSE_RDS_HOST
+              value: "{MYSQL_HOST}"
+            - name: EXPOSE_RDS_USER
+              value: "{MYSQL_USER}"
+            - name: EXPOSE_RDS_PASS
+              value: "{MYSQL_PASS}"
+            - name: MYSQL_HOST
+              value: "{MYSQL_HOST}"
+            - name: MYSQL_USER
+              value: "{MYSQL_USER}"
+            - name: MYSQL_PASS
+              value: "{MYSQL_PASS}"
+            - name: MYSQL_DB
+              value: "{MYSQL_DB}"
+            - name: BUILD
+              value: "{BUILD}"
+            - name: MYSQL_PORT
+              value: "{MYSQL_PORT}"
+      volumes:
+      - name: uploads
+        emptyDir:
+      terminationGracePeriodSeconds: 20
+
